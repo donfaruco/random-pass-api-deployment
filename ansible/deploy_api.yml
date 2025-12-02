@@ -1,33 +1,55 @@
-
 ---
-- name: Deploy Flask Random Pass API using Docker
+- name: Deploy Flask Random Pass API using Docker (Forced Refresh)
   hosts: all
   become: yes
   tasks:
+    # --- Dependencies Setup ---
+
     - name: Ensure Docker is installed
-      apt:
+      ansible.builtin.apt:
         name: docker.io
         state: present
       when: ansible_os_family == "Debian"
 
     - name: Start Docker service
-      service:
+      ansible.builtin.service:
         name: docker
         state: started
         enabled: true
 
-    - name: Pull the Docker image
-      docker_image:
+    # --- Forced Pull Logic ---
+    
+    # 1. Stop and remove the existing container
+    - name: Stop and remove existing container to allow image deletion
+      community.docker.docker_container:
+        name: random-pass
+        state: absent
+      ignore_errors: true # In case the container doesn't exist yet
+
+    # 2. Force delete the local image copy
+    - name: Force delete local image to guarantee a fresh pull
+      community.docker.docker_image:
+        name: farevalo29/random-pass
+        tag: amd64
+        state: absent
+        # The 'force: true' parameter ensures the image is deleted, 
+        # even if it was previously used by the now-deleted container.
+        force: true
+      ignore_errors: true # In case the image doesn't exist yet
+
+    # 3. Pull the image (This is now guaranteed to pull from the registry)
+    - name: Pull the latest Docker image from the registry
+      community.docker.docker_image:
         name: farevalo29/random-pass
         tag: amd64
         source: pull
-
+      
+    # 4. Run the container using the newly pulled image
     - name: Run the container
-      docker_container:
+      community.docker.docker_container:
         name: random-pass
         image: farevalo29/random-pass:amd64
         state: started
         restart_policy: always
         published_ports:
-          - "80:8000"
-
+          - "80:5000"
