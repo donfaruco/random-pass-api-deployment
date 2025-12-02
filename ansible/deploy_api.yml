@@ -1,0 +1,33 @@
+
+---
+- name: Deploy Flask Random Pass API using Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure Docker is installed
+      apt:
+        name: docker.io
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Pull the Docker image
+      docker_image:
+        name: farevalo29/random-pass
+        tag: amd64
+        source: pull
+
+    - name: Run the container
+      docker_container:
+        name: random-pass
+        image: farevalo29/random-pass:amd64
+        state: started
+        restart_policy: always
+        published_ports:
+          - "80:8000"
+
