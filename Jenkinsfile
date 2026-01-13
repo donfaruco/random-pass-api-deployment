@@ -37,7 +37,7 @@ pipeline {
                     sh '''
                     export ANSIBLE_HOST_KEY_CHECKING=False
                     ansible-playbook -i ansible/inventory.ini ${PLAYBOOK} --force-handlers
-                    curl http://54.218.252.194/health
+                    curl http://16.144.74.249/health
                     '''
                 }
             }
